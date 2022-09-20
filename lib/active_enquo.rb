@@ -9,7 +9,7 @@ module ActiveEnquo
 			raise ArgumentError, "The ActiveEnquo root key must be a 32 byte binary string"
 		end
 
-		@crypto = Enquo::Crypto.new(k)
+		@crypto = Enquo::Root.new(k)
 	end
 
 	def self.crypto
@@ -32,7 +32,7 @@ module ActiveEnquo
 					field = ::ActiveEnquo.crypto.field(relation, attr_name)
 					begin
 						t.decrypt(value, @attributes.fetch_value(@primary_key).to_s, field)
-					rescue RuntimeError
+					rescue Enquo::Error
 						# If the record had not yet been inserted into the database at the time the
 						# attribute was originally written, then that attribute's context will be empty.
 						# This is troublesome, but it's tricky to solve at this layer, so we'll have to

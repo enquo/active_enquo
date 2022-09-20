@@ -24,24 +24,46 @@ shared_examples "an ORE-encrypted value" do |model, value|
 
 	let(:json_value) { JSON.parse(db_value, symbolize_names: true) }
 
-	it "is an OREv1" do
-		expect(json_value).to have_key(:ORE64v1)
+	it "is a v1 ciphertext" do
+		expect(json_value).to have_key(:v1)
 	end
 
-	let(:ore64v1) { json_value[:ORE64v1] }
+	it "has an AES v1 ciphertext" do
+		expect(json_value[:v1]).to have_key(:a)
+		expect(json_value[:v1][:a]).to have_key(:v1)
+	end
+
+	it "has an ORE v1 ciphertext" do
+		expect(json_value[:v1]).to have_key(:o)
+		expect(json_value[:v1][:o]).to have_key(:v1)
+	end
+
+	it "has a key ID" do
+		expect(json_value[:v1]).to have_key(:k)
+		expect(json_value[:v1][:k]).to match([a_value_between(0, 255)] * 4)
+	end
+
+	let(:aes) { json_value[:v1][:a][:v1] }
 
 	it "has a 96 bit IV" do
-		expect(ore64v1[:iv]).to match([a_value_between(0, 255)] * 12)
+		expect(aes[:iv]).to match([a_value_between(0, 255)] * 12)
 	end
 
 	it "has a bytestring ciphertext" do
-		expect(ore64v1[:ct].length).to satisfy { |l| l >= 8 }
-		expect(ore64v1[:ct]).to all be_between(0, 255)
+		expect(aes[:ct].length).to satisfy { |l| l >= 8 }
+		expect(aes[:ct]).to all be_between(0, 255)
 	end
 
-	it "has a bytestring ORE ciphertext" do
-		expect(ore64v1[:ore].length).to satisfy { |l| l >= 200 }
-		expect(ore64v1[:ore]).to all be_between(0, 255)
+	let(:ore) { json_value[:v1][:o][:v1] }
+
+	it "has a bytestring left ORE ciphertext" do
+		expect(ore[:l].length).to eq(136)
+		expect(ore[:l]).to all be_between(0, 255)
+	end
+
+	it "has a bytestring right ORE ciphertext" do
+		expect(ore[:r].length).to eq(272)
+		expect(ore[:r]).to all be_between(0, 255)
 	end
 end
 
