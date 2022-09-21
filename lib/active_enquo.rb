@@ -5,20 +5,18 @@ require "enquo"
 
 module ActiveEnquo
 	def self.root_key=(k)
-		unless k.is_a?(String) && k.encoding == Encoding::BINARY && k.bytesize == 32
-			raise ArgumentError, "The ActiveEnquo root key must be a 32 byte binary string"
-		end
-
-		@crypto = Enquo::Root.new(k)
+		@root = Enquo::Root.new(k)
 	end
 
-	def self.crypto
-		if @crypto.nil?
-			raise RuntimeError, "The ActiveEnquo root key must be set before calling ActiveEnquo.crypto"
+	def self.root
+		if @root.nil?
+			raise RuntimeError, "The ActiveEnquo root key must be set before calling ActiveEnquo.root"
 		end
 
-		@crypto
+		@root
 	end
+
+	RootKey = Enquo::RootKey
 
 	module ActiveRecord
 		module ModelExtension
@@ -29,7 +27,7 @@ module ActiveEnquo
 				if t.is_a?(::ActiveEnquo::Type)
 					relation = self.class.arel_table.name
 					value = @attributes.fetch_value(attr_name, &block)
-					field = ::ActiveEnquo.crypto.field(relation, attr_name)
+					field = ::ActiveEnquo.root.field(relation, attr_name)
 					begin
 						t.decrypt(value, @attributes.fetch_value(@primary_key).to_s, field)
 					rescue Enquo::Error
@@ -48,7 +46,7 @@ module ActiveEnquo
 				t = self.class.attribute_types[attr_name]
 				if t.is_a?(::ActiveEnquo::Type)
 					relation = self.class.arel_table.name
-					field = ::ActiveEnquo.crypto.field(relation, attr_name)
+					field = ::ActiveEnquo.root.field(relation, attr_name)
 					db_value = t.encrypt(value, @attributes.fetch_value(@primary_key).to_s, field)
 					@attributes.write_from_user(attr_name, db_value)
 				else
@@ -61,7 +59,7 @@ module ActiveEnquo
 					t = self.attribute_types[attr_name.to_s]
 					if t.is_a?(::ActiveEnquo::Type)
 						relation = self.arel_table.name
-						field = ::ActiveEnquo.crypto.field(relation, attr_name)
+						field = ::ActiveEnquo.root.field(relation, attr_name)
 						t.encrypt(value, "", field)
 					else
 						raise ArgumentError, "Cannot produce encrypted value on a non-enquo attribute '#{attr_name}'"

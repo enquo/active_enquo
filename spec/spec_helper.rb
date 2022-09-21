@@ -48,6 +48,6 @@ RSpec.configure do |config|
 		CreateBigints.migrate(:down) rescue nil
 		CreateBigints.migrate(:up)
 
-		::ActiveEnquo.root_key = SecureRandom.bytes(32)
+		::ActiveEnquo.root_key = ::ActiveEnquo::RootKey::Static.new(SecureRandom.bytes(32))
 	end
 end
