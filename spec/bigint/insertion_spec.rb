@@ -30,12 +30,10 @@ shared_examples "an ORE-encrypted value" do |model, value|
 
 	it "has an AES v1 ciphertext" do
 		expect(json_value[:v1]).to have_key(:a)
-		expect(json_value[:v1][:a]).to have_key(:v1)
 	end
 
 	it "has an ORE v1 ciphertext" do
 		expect(json_value[:v1]).to have_key(:o)
-		expect(json_value[:v1][:o]).to have_key(:v1)
 	end
 
 	it "has a key ID" do
@@ -43,7 +41,7 @@ shared_examples "an ORE-encrypted value" do |model, value|
 		expect(json_value[:v1][:k]).to match([a_value_between(0, 255)] * 4)
 	end
 
-	let(:aes) { json_value[:v1][:a][:v1] }
+	let(:aes) { json_value[:v1][:a] }
 
 	it "has a 96 bit IV" do
 		expect(aes[:iv]).to match([a_value_between(0, 255)] * 12)
@@ -54,7 +52,7 @@ shared_examples "an ORE-encrypted value" do |model, value|
 		expect(aes[:ct]).to all be_between(0, 255)
 	end
 
-	let(:ore) { json_value[:v1][:o][:v1] }
+	let(:ore) { json_value[:v1][:o] }
 
 	it "has a bytestring left ORE ciphertext" do
 		expect(ore[:l].length).to eq(136)
@@ -62,7 +60,7 @@ shared_examples "an ORE-encrypted value" do |model, value|
 	end
 
 	it "has a bytestring right ORE ciphertext" do
-		expect(ore[:r].length).to eq(272)
+		expect(ore[:r].length).to be_between(420, 460)
 		expect(ore[:r]).to all be_between(0, 255)
 	end
 end
