@@ -41,7 +41,7 @@ A good way to generate this key is with the `SecureRandom` module:
 ruby -r securerandom -e 'puts SecureRandom.hex(32)'
 ```
 
-With this key in hand, you can store it in the Rails credential store:
+With this key in hand, you can store it in the Rails credential store, like this:
 
 1. Open up the Rails credentials editor:
 
@@ -76,7 +76,7 @@ If you have a burning desire to see that more on the "sooner" end than "later", 
 
 # Usage
 
-Start by creating a column in your database that uses one of the [available enquo types](https://enquo.org/pg_enquo/types), with a Rails migration:
+Start by creating a column in your database that uses one of the [available enquo types](https://github.com/enquo/pg_enquo/doc/data_types), with a Rails migration:
 
 ```ruby
 class AddEncryptedBigintColumn < ActiveRecord::Migration[6.0]
@@ -138,7 +138,7 @@ And that, as they say, is that.
 These are some of the things that are definitely planned to be added to ActiveEnquo in the nearish future.
 
 * **Support for key rotation**: this isn't tricky, just a bit fiddly.
-  Encrypted values need to have a "key ID" associated with them, so we can find which values are out-of-date, and multiple keys need to useable for decryption.
+  Encrypted values have a "key ID" associated with them, so we can find which values are out-of-date, but multiple keys need to useable for decryption.
   Closely related to this is **support for renaming columns**, which is problematic because keys are derived based on the column name.
   Again, key IDs (to find values encrypted with the previous column name) and the ability to attempt decryption with a key based on the previous column name sorts this out.
 
