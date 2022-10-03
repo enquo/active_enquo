@@ -9,8 +9,9 @@ Read our [how it works](https://enquo.org/how-it-works) if you're interested in 
 # Pre-requisites
 
 In order to make use of this extension, you must be running Postgres 10 or higher, with the [`pg_enquo`](https://github.com/enquo/pg_enquo) extension enabled in the database you're working in.
+See [the `pg_enquo` installation guide](https://github.com/enquo/pg_enquo/tree/main/doc/installation.md) for instructions on how to install `pg_enquo`.
 
-Also, if you're installing from source, you'll need a reasonably recent [Rust](https://rust-lang.org) toolchain installed.
+Also, if you're installing this gem from source, you'll need a reasonably recent [Rust](https://rust-lang.org) toolchain installed.
 
 
 # Installation
@@ -133,6 +134,47 @@ psql> SELECT age FROM users WHERE username='cbloggs';
 And that, as they say, is that.
 
 
+## Indexing and Ordering
+
+To maintain [security](https://enquo.org/about/threat-models#snapshot-security), ActiveEnquo isn't able to `ORDER BY` or index columns.
+This is fine for many situations -- many columns don't need indexes.
+
+For those columns that *do* need indexes or `ORDER BY` support, you can enable support for them by setting the `enable_reduced_security_operations` flag on the attribute, like this:
+
+```ruby
+class User < ApplicationRecord
+  # Enables indexing and ORDER BY for this column, at the cost of reduced security
+  enquo_attr :age, enable_reduced_security_operations: true
+end
+```
+
+### SECURITY ALERT
+
+As the name implies, "reduced security operations" require that the security of the data in the column be lower than [Enquo's default security properties](https://enquo.org/about/threat-models#snapshot-security).
+In particular, extra data is stored in the value which can be used by an attacker to:
+
+* Identify all rows which have the same value for the column (although not what that value actually *is*); and
+
+* Perform inference attacks to try and determine the approximate or exact value for the column of some or all of the rows.
+
+The practical implications of these attack vectors varies wildly between different types of data, which makes it harder to decide if it's reasonable to allow reduced security operations.
+Our recommended rule-of-thumb is that if the features you need can *only* be implemented if you either enable reduced security operations, or leave the data unencrypted, then enable them.
+Otherwise, leave the default as-is.
+
+
+## Saving Disk Space
+
+While the power of `ActiveEnquo` is based around being able to *query* encrypted data, not all columns necessarily need to be queried.
+If so, you can reduce the disk space requirements for those columns by setting `no_query: true` for those columns:
+
+```ruby
+class User < ApplicationRecord
+  # Disables querying for this column, and saves a heap of bytes on your disk space
+  enquo_attr :age, no_query: true
+end
+```
+
+
 # Future Developments
 
 These are some of the things that are definitely planned to be added to ActiveEnquo in the nearish future.
@@ -145,6 +187,9 @@ These are some of the things that are definitely planned to be added to ActiveEn
 * **Strings**: a great deal of the sensitive data that needs protecting is in the form of strings.
   Querying strings is somewhat more involved than numeric data, and so the means of encrypting strings such that they're queryable *and* secure are more complex.
   Enquo cannot be a really useful library for supporting encrypted querying until at least some common string query operations are supported, though, so it is important that this be implemented.
+
+* **Other data types**: while you can go a long way with strings and bigints, part of the power of SQL is the sheer variety of interesting data types it has, and the variety of things you can do with them.
+  So more integer types, floats, decimals, dates, times, timestamps, and more, are all on the cards for future development.
 
 
 # Contributing

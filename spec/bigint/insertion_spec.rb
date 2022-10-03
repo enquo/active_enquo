@@ -7,7 +7,7 @@ def bind_param(value)
 	ActiveRecord::Relation::QueryAttribute.new(nil, value, ActiveRecord::Type::Value.new)
 end
 
-shared_examples "an ORE-encrypted value" do |model, value|
+shared_examples "an ORE-encrypted value" do |model, value, unsafe: false, no_query: false|
 	let(:record) { model.new(value: value) }
 	let(:db_value) do
 		record.save!
@@ -54,14 +54,26 @@ shared_examples "an ORE-encrypted value" do |model, value|
 
 	let(:ore) { json_value[:v1][:o] }
 
-	it "has a bytestring left ORE ciphertext" do
-		expect(ore[:l].length).to eq(136)
-		expect(ore[:l]).to all be_between(0, 255)
-	end
+	if no_query
+		it "has no ORE ciphertext" do
+			expect(ore).to be_nil
+		end
+	else
+		if unsafe
+			it "has a bytestring left ORE ciphertext" do
+				expect(ore[:l].length).to eq(136)
+				expect(ore[:l]).to all be_between(0, 255)
+			end
+		else
+			it "has no left ORE ciphertext" do
+				expect(ore[:l]).to be_nil
+			end
+		end
 
-	it "has a bytestring right ORE ciphertext" do
-		expect(ore[:r].length).to be_between(420, 460)
-		expect(ore[:r]).to all be_between(0, 255)
+		it "has a bytestring right ORE ciphertext" do
+			expect(ore[:r].length).to be_between(420, 460)
+			expect(ore[:r]).to all be_between(0, 255)
+		end
 	end
 end
 
@@ -106,6 +118,34 @@ describe "record insertion" do
 				it "explodes" do
 					expect { Bigint.new(value: v).save! }.to raise_error(ArgumentError)
 				end
+			end
+		end
+	end
+
+	context "into sortable_bigint" do
+		{
+			"zero" => 0,
+			"a small positive integer" => 42,
+			"a small negative integer" => -42,
+			"a large positive integer" => 2**42,
+			"a large negative integer" => -2**42,
+		}.each do |desc, v|
+			context "storing #{desc}" do
+				it_behaves_like "an ORE-encrypted value", SortableBigint, v, unsafe: true
+			end
+		end
+	end
+
+	context "into unqueryable_bigint" do
+		{
+			"zero" => 0,
+			"a small positive integer" => 42,
+			"a small negative integer" => -42,
+			"a large positive integer" => 2**42,
+			"a large negative integer" => -2**42,
+		}.each do |desc, v|
+			context "storing #{desc}" do
+				it_behaves_like "an ORE-encrypted value", UnqueryableBigint, v, no_query: true
 			end
 		end
 	end

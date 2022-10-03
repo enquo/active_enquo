@@ -47,7 +47,11 @@ module ActiveEnquo
 				if t.is_a?(::ActiveEnquo::Type)
 					relation = self.class.arel_table.name
 					field = ::ActiveEnquo.root.field(relation, attr_name)
-					db_value = t.encrypt(value, @attributes.fetch_value(@primary_key).to_s, field)
+					attr_opts = self.class.enquo_attribute_options.fetch(attr_name.to_sym, {})
+					safety = if attr_opts[:enable_reduced_security_operations]
+						:unsafe
+					end
+					db_value = t.encrypt(value, @attributes.fetch_value(@primary_key).to_s, field, safety: safety, no_query: attr_opts[:no_query])
 					@attributes.write_from_user(attr_name, db_value)
 				else
 					super
@@ -60,10 +64,18 @@ module ActiveEnquo
 					if t.is_a?(::ActiveEnquo::Type)
 						relation = self.arel_table.name
 						field = ::ActiveEnquo.root.field(relation, attr_name)
-						t.encrypt(value, "", field)
+						t.encrypt(value, "", field, safety: :unsafe)
 					else
 						raise ArgumentError, "Cannot produce encrypted value on a non-enquo attribute '#{attr_name}'"
 					end
+				end
+
+				def enquo_attr(attr_name, opts)
+					enquo_attribute_options[attr_name] = @enquo_attribute_options[attr_name].merge(opts)
+				end
+
+				def enquo_attribute_options
+					@enquo_attribute_options ||= Hash.new({})
 				end
 			end
 		end
@@ -85,8 +97,8 @@ module ActiveEnquo
 				:enquo_bigint
 			end
 
-			def encrypt(value, context, field)
-				field.encrypt_i64(value, context)
+			def encrypt(value, context, field, safety: true, no_query: false)
+				field.encrypt_i64(value, context, safety: safety, no_query: no_query)
 			end
 
 			def decrypt(value, context, field)

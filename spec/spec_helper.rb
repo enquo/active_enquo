@@ -45,8 +45,10 @@ RSpec.configure do |config|
 	config.before(:suite) do
 		ActiveRecord::Base.establish_connection(adapter: 'postgresql')
 
-		CreateBigints.migrate(:down) rescue nil
-		CreateBigints.migrate(:up)
+		[CreateBigints, CreateSortableBigints, CreateUnqueryableBigints].each do |migration|
+			migration.migrate(:down) rescue nil
+			migration.migrate(:up)
+		end
 
 		::ActiveEnquo.root_key = ::ActiveEnquo::RootKey::Static.new(SecureRandom.bytes(32))
 	end
