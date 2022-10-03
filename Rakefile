@@ -12,10 +12,6 @@ end
 
 Bundler::GemHelper.install_tasks
 
-task :release do
-	sh "git release"
-end
-
 require 'yard'
 
 YARD::Rake::YardocTask.new :doc do |yardoc|

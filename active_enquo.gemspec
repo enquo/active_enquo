@@ -16,24 +16,29 @@ Gem::Specification.new do |s|
 
 	s.authors  = ["Matt Palmer"]
 	s.email    = ["matt@enquo.org"]
-  s.homepage = "https://enquo.org/active_enquo"
+	s.homepage = "https://enquo.org"
+
+	s.metadata["homepage_uri"] = s.homepage
+	s.metadata["source_code_uri"] = "https://github.com/enquo/active_enquo"
+	s.metadata["changelog_uri"] = "https://github.com/enquo/active_enquo/releases"
+	s.metadata["bug_tracker_uri"] = "https://github.com/enquo/active_enquo/issues"
 
 	s.files = `git ls-files -z`.split("\0").reject { |f| f =~ /^(G|spec|Rakefile)/ }
 
-  s.required_ruby_version = ">= 2.7.0"
+	s.required_ruby_version = ">= 2.7.0"
 
- 	s.add_runtime_dependency "enquo-core"
-  s.add_runtime_dependency "activerecord", ">= 6"
+	s.add_runtime_dependency "enquo-core", "~> 0.3"
+	s.add_runtime_dependency "activerecord", ">= 6"
 
 	s.add_development_dependency "bundler"
 	s.add_development_dependency "github-release"
 	s.add_development_dependency "guard-rspec"
-  s.add_development_dependency "pg"
-  s.add_development_dependency "rake", "~> 13.0"
+	s.add_development_dependency "pg"
+	s.add_development_dependency "rake", "~> 13.0"
 	# Needed for guard
 	s.add_development_dependency "rb-inotify", "~> 0.9"
 	s.add_development_dependency "redcarpet"
 	s.add_development_dependency "rspec"
-  s.add_development_dependency "simplecov"
+	s.add_development_dependency "simplecov"
 	s.add_development_dependency "yard"
 end
