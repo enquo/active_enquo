@@ -7,7 +7,7 @@ def bind_param(value)
 	ActiveRecord::Relation::QueryAttribute.new(nil, value, ActiveRecord::Type::Value.new)
 end
 
-shared_examples "an ORE-encrypted value" do |model, value, unsafe: false, no_query: false|
+shared_examples "an ORE-encrypted bigint" do |model, value, unsafe: false, no_query: false|
 	let(:record) { model.new(value: value) }
 	let(:db_value) do
 		record.save!
@@ -87,7 +87,7 @@ describe "record insertion" do
 			"a large negative integer" => -2**42,
 		}.each do |desc, v|
 			context "storing #{desc}" do
-				it_behaves_like "an ORE-encrypted value", Bigint, v
+				it_behaves_like "an ORE-encrypted bigint", Bigint, v
 			end
 		end
 
@@ -131,7 +131,7 @@ describe "record insertion" do
 			"a large negative integer" => -2**42,
 		}.each do |desc, v|
 			context "storing #{desc}" do
-				it_behaves_like "an ORE-encrypted value", SortableBigint, v, unsafe: true
+				it_behaves_like "an ORE-encrypted bigint", SortableBigint, v, unsafe: true
 			end
 		end
 	end
@@ -145,7 +145,7 @@ describe "record insertion" do
 			"a large negative integer" => -2**42,
 		}.each do |desc, v|
 			context "storing #{desc}" do
-				it_behaves_like "an ORE-encrypted value", UnqueryableBigint, v, no_query: true
+				it_behaves_like "an ORE-encrypted bigint", UnqueryableBigint, v, no_query: true
 			end
 		end
 	end

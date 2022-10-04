@@ -5,6 +5,7 @@ require 'rspec/mocks'
 
 require "active_record"
 require_relative "./support/migrations/create_bigints"
+require_relative "./support/migrations/create_dates"
 
 require 'simplecov'
 SimpleCov.start do
@@ -45,7 +46,10 @@ RSpec.configure do |config|
 	config.before(:suite) do
 		ActiveRecord::Base.establish_connection(adapter: 'postgresql')
 
-		[CreateBigints, CreateSortableBigints, CreateUnqueryableBigints].each do |migration|
+		[
+			CreateBigints, CreateSortableBigints, CreateUnqueryableBigints,
+			CreateEnDates, CreateSortableDates, CreateUnqueryableDates,
+		].each do |migration|
 			migration.migrate(:down) rescue nil
 			migration.migrate(:up)
 		end

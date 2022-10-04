@@ -1,7 +1,9 @@
 require "active_record/connection_adapters/postgresql_adapter"
 require "active_support/lazy_load_hooks"
 
+require "date"
 require "enquo"
+require "time"
 
 module ActiveEnquo
 	def self.root_key=(k)
@@ -85,6 +87,7 @@ module ActiveEnquo
 		module ConnectionAdapter
 			def initialize_type_map(m = type_map)
 				m.register_type "enquo_bigint", ActiveEnquo::Type::Bigint.new
+				m.register_type "enquo_date", ActiveEnquo::Type::Date.new
 
 				super
 			end
@@ -103,6 +106,33 @@ module ActiveEnquo
 
 			def decrypt(value, context, field)
 				field.decrypt_i64(value, context)
+			end
+		end
+
+		class Date < Type
+			def type
+				:enquo_date
+			end
+
+			def encrypt(value, context, field, safety: true, no_query: false)
+				value = cast_to_date(value)
+				field.encrypt_date(value, context, safety: safety, no_query: no_query)
+			end
+
+			def decrypt(value, context, field)
+				field.decrypt_date(value, context)
+			end
+
+			private
+
+			def cast_to_date(value)
+				if Date === value
+					value
+				elsif value.respond_to?(:to_date)
+					value.to_date
+				else
+					Time.parse(value.to_s).to_date
+				end
 			end
 		end
 	end
