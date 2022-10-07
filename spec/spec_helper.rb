@@ -6,6 +6,7 @@ require 'rspec/mocks'
 require "active_record"
 require_relative "./support/migrations/create_bigints"
 require_relative "./support/migrations/create_dates"
+require_relative "./support/migrations/create_texts"
 
 require 'simplecov'
 SimpleCov.start do
@@ -49,6 +50,7 @@ RSpec.configure do |config|
 		[
 			CreateBigints, CreateSortableBigints, CreateUnqueryableBigints,
 			CreateEnDates, CreateSortableDates, CreateUnqueryableDates,
+			CreateTexts, CreateUnqueryableTexts,
 		].each do |migration|
 			migration.migrate(:down) rescue nil
 			migration.migrate(:up)

@@ -88,6 +88,7 @@ module ActiveEnquo
 			def initialize_type_map(m = type_map)
 				m.register_type "enquo_bigint", ActiveEnquo::Type::Bigint.new
 				m.register_type "enquo_date", ActiveEnquo::Type::Date.new
+				m.register_type "enquo_text", ActiveEnquo::Type::Text.new
 
 				super
 			end
@@ -135,6 +136,20 @@ module ActiveEnquo
 				end
 			end
 		end
+
+		class Text < Type
+			def type
+				:enquo_text
+			end
+
+			def encrypt(value, context, field, safety: true, no_query: false)
+				field.encrypt_text(value, context, safety: safety, no_query: no_query)
+			end
+
+			def decrypt(value, context, field)
+				field.decrypt_text(value, context)
+			end
+		end
 	end
 end
 
@@ -146,5 +161,7 @@ ActiveSupport.on_load(:active_record) do
 
 	unless ActiveRecord::VERSION::MAJOR == 7
 		::ActiveRecord::ConnectionAdapters::PostgreSQLAdapter::NATIVE_DATABASE_TYPES[:enquo_bigint] = {}
+		::ActiveRecord::ConnectionAdapters::PostgreSQLAdapter::NATIVE_DATABASE_TYPES[:enquo_date] = {}
+		::ActiveRecord::ConnectionAdapters::PostgreSQLAdapter::NATIVE_DATABASE_TYPES[:enquo_text] = {}
 	end
 end

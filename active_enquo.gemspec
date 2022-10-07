@@ -27,7 +27,7 @@ Gem::Specification.new do |s|
 
 	s.required_ruby_version = ">= 2.7.0"
 
-	s.add_runtime_dependency "enquo-core", "~> 0.4"
+	s.add_runtime_dependency "enquo-core", "~> 0.6"
 	s.add_runtime_dependency "activerecord", ">= 6"
 
 	s.add_development_dependency "bundler"
