@@ -29,6 +29,7 @@ module ActiveEnquo
 				if t.is_a?(::ActiveEnquo::Type)
 					relation = self.class.arel_table.name
 					value = @attributes.fetch_value(attr_name, &block)
+					return nil if value.nil?
 					field = ::ActiveEnquo.root.field(relation, attr_name)
 					begin
 						t.decrypt(value, @attributes.fetch_value(@primary_key).to_s, field)
@@ -79,6 +80,20 @@ module ActiveEnquo
 				def enquo_attribute_options
 					@enquo_attribute_options ||= Hash.new({})
 				end
+			end
+		end
+
+		module TableDefinitionExtension
+			def enquo_bigint(name, **options)
+				column(name, :enquo_bigint, **options)
+			end
+
+			def enquo_date(name, **options)
+				column(name, :enquo_date, **options)
+			end
+
+			def enquo_text(name, **options)
+				column(name, :enquo_text, **options)
 			end
 		end
 	end
@@ -151,17 +166,31 @@ module ActiveEnquo
 			end
 		end
 	end
+
+	if defined?(Rails::Railtie)
+		class Initializer < Rails::Railtie
+			initializer "active_enquo.root_key" do |app|
+				if app
+					if root_key = app.credentials.active_enquo.root_key
+						ActiveEnquo.root_key = Enquo::RootKey::Static.new(root_key)
+					else
+						Rails.warn "Could not initialize ActiveEnquo, as no active_enquo.root_key credential was found for this environment"
+					end
+				end
+			end
+		end
+	end
 end
 
 ActiveSupport.on_load(:active_record) do
 	::ActiveRecord::Base.send :include, ActiveEnquo::ActiveRecord::ModelExtension
 
-	::ActiveRecord::ConnectionAdapters::PostgreSQLAdapter.prepend ActiveEnquo::Postgres::ConnectionAdapter
-#	::ActiveRecord::Type.register(:enquo_bigint, ActiveEnquo::Type::Bigint, adapter: :postgresql)
+	::ActiveRecord::ConnectionAdapters::Table.include ActiveEnquo::ActiveRecord::TableDefinitionExtension
+	::ActiveRecord::ConnectionAdapters::TableDefinition.include ActiveEnquo::ActiveRecord::TableDefinitionExtension
 
-	unless ActiveRecord::VERSION::MAJOR == 7
-		::ActiveRecord::ConnectionAdapters::PostgreSQLAdapter::NATIVE_DATABASE_TYPES[:enquo_bigint] = {}
-		::ActiveRecord::ConnectionAdapters::PostgreSQLAdapter::NATIVE_DATABASE_TYPES[:enquo_date] = {}
-		::ActiveRecord::ConnectionAdapters::PostgreSQLAdapter::NATIVE_DATABASE_TYPES[:enquo_text] = {}
-	end
+	::ActiveRecord::ConnectionAdapters::PostgreSQLAdapter.prepend ActiveEnquo::Postgres::ConnectionAdapter
+
+	::ActiveRecord::ConnectionAdapters::PostgreSQLAdapter::NATIVE_DATABASE_TYPES[:enquo_bigint] = { name: "enquo_bigint" }
+	::ActiveRecord::ConnectionAdapters::PostgreSQLAdapter::NATIVE_DATABASE_TYPES[:enquo_date]   = { name: "enquo_date" }
+	::ActiveRecord::ConnectionAdapters::PostgreSQLAdapter::NATIVE_DATABASE_TYPES[:enquo_text]   = { name: "enquo_text" }
 end
