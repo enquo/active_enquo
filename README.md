@@ -116,7 +116,7 @@ You can now, without any further ado, use that attribute in your models as you w
 For example, you can insert a new record:
 
 ```ruby
-User.create!([{name: "Clara Bloggs", username: "cbloggs", date_of_birth: Date(1970, 1, 1)}])
+User.create!([{name: "Clara Bloggs", username: "cbloggs", date_of_birth: Date.new(1970, 1, 1)}])
 ```
 
 When you retrieve a record, the value is there for you to read:
@@ -135,13 +135,13 @@ Performing a query on Enquo-encrypted data is done the same way as on unencrypte
 You can query for records that have the exact value you're looking for:
 
 ```ruby
-User.where(age: User.enquo(:date_of_birth, Date(1970, 1, 1)))
+User.where(date_of_birth: User.enquo(:date_of_birth, Date(1970, 1, 1)))
 ```
 
 Or you can query for users born less than 50 years ago:
 
 ```ruby
-User.where(age: User.enquo(:date, Date.today - 50.years)..)
+User.where(date_of_birth: User.enquo(:date, Date.today - 50.years)..)
 ```
 
 This doesn't seem so magical, until you take a peek in the database, and realise that *all the data is still encrypted*:
