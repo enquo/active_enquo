@@ -1,0 +1,27 @@
+#!/usr/bin/env ruby
+
+require "active_record"
+require "active_enquo"
+require "pg"
+
+require_relative "../init"
+
+def assert_eq(expected, actual)
+  unless expected == actual
+    $stderr.puts "Expected #{expected.inspect} to equal #{actual.inspect}"
+    exit 1
+  end
+end
+
+def value(f, v)
+  if ENV.key?("USING_ENQUO")
+    People.enquo(f, v)
+  else
+    v
+  end
+end
+
+ActiveRecord::Base.establish_connection(adapter: ENV.fetch("DBTYPE"))
+
+assert_eq(["Meyers"], People.where(first_name: value(:first_name, "Seth")).all.map { |p| p.last_name })
+assert_eq(8, People.where(date_of_birth: value(:date_of_birth, "1980-01-01")..).count)

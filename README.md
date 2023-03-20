@@ -154,6 +154,12 @@ psql> SELECT date_of_birth FROM users WHERE username='cbloggs';
 ```
 
 
+## Migrating Existing Data to Encrypted Form
+
+This is a topic on which a lot of words can be written.
+For the sake of tidiness, these words are in [a guide of their own](docs/MIGRATION.md).
+
+
 ## Indexing and Ordering
 
 To maintain [security by default](https://enquo.org/about/threat-models#snapshot-security), ActiveEnquo doesn't provide the ability to `ORDER BY` or index columns by default.
@@ -167,6 +173,7 @@ class User < ApplicationRecord
   enquo_attr :age, enable_reduced_security_operations: true
 end
 ```
+
 
 ### Security Considerations
 

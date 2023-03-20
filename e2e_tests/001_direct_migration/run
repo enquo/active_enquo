@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+. ../helper.sh
+
+export DBTYPE="postgresql"
+
+check_enquo_pg_db
+clear_pg_db
+
+ar_db_migrate "001"
+load_people
+
+./exercise_model
+
+ar_db_migrate "002"
+USING_ENQUO="y" ./exercise_model

@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+cd "$(dirname "${BASH_SOURCE[0]}")"
+
+for t in [0-9]*; do
+	rv="0"
+	cd "$t"
+
+	./run || rv="$?"
+
+	if [ "$rv" != "0" ]; then
+		echo "Test $i failed with exit code $rv" >&2
+		exit 1
+	fi
+done
+
+echo "All tests passed."

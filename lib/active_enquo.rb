@@ -80,6 +80,45 @@ module ActiveEnquo
 				def enquo_attribute_options
 					@enquo_attribute_options ||= Hash.new({})
 				end
+
+				def enquo_encrypt_columns(column_map, batch_size: 10_000)
+					plaintext_columns = column_map.keys
+					relation = self.arel_table.name
+					in_progress = true
+
+					while in_progress
+						self.transaction do
+							# The .where("0=1") here is a dummy condition so that the q.or in the .each will work properly
+							q = self.select(self.primary_key).select(plaintext_columns).where("0=1")
+							column_map.each do |pt_col, ct_col|
+								q = q.or(self.where(ct_col => nil).where.not(pt_col => nil))
+							end
+
+							q = q.limit(batch_size).lock
+
+							rows = ::ActiveRecord::Base.connection.exec_query(q.to_sql)
+							if rows.length == 0
+								in_progress = false
+							else
+								rows.each do |row|
+									values = Hash[column_map.map do |pt_col, ct_col|
+										field = ::ActiveEnquo.root.field(relation, ct_col)
+										attr_opts = self.enquo_attribute_options.fetch(ct_col.to_sym, {})
+										safety = if attr_opts[:enable_reduced_security_operations]
+											:unsafe
+										end
+										t = self.attribute_types[ct_col.to_s]
+										db_value = t.encrypt(row[pt_col.to_s], row[self.primary_key].to_s, field, safety: safety, no_query: attr_opts[:no_query])
+
+										[ct_col, db_value]
+									end]
+
+									People.where(self.primary_key => row[self.primary_key]).update_all(values)
+								end
+							end
+						end
+					end
+				end
 			end
 		end
 
