@@ -210,11 +210,21 @@ module ActiveEnquo
 		class Initializer < Rails::Railtie
 			initializer "active_enquo.root_key" do |app|
 				if app
-					if root_key = app.credentials.active_enquo.root_key
-						ActiveEnquo.root_key = Enquo::RootKey::Static.new(root_key)
+					if app.credentials
+						if app.credentials.active_enquo
+							if root_key = app.credentials.active_enquo.root_key
+								ActiveEnquo.root_key = Enquo::RootKey::Static.new(root_key)
+							else
+								Rails.logger.warn "Could not initialize ActiveEnquo, as no active_enquo.root_key credential was found for this environment"
+							end
+						else
+							Rails.logger.warn "Could not initialize ActiveEnquo, as no active_enquo credentials were found for this environment"
+						end
 					else
-						Rails.warn "Could not initialize ActiveEnquo, as no active_enquo.root_key credential was found for this environment"
+						Rails.logger.warn "Could not initialize ActiveEnquo, as no credentials were found for this environment"
 					end
+				else
+					Rails.logger.warn "Could not initialize ActiveEnquo, as no app was found for this environment"
 				end
 			end
 		end
