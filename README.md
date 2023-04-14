@@ -130,18 +130,18 @@ User.where(username: "cbloggs").first.date_of_birth.to_s  # => "1970-01-01"
 
 This is where things get *neat*.
 
-Performing a query on Enquo-encrypted data is done the same way as on unencrypted data, with one exception: you need to wrap the values of the query in `<Model>.enquo` calls, as in the examples below.
+Performing a query on Enquo-encrypted data is done the same way as on unencrypted data.
 
 You can query for records that have the exact value you're looking for:
 
 ```ruby
-User.where(date_of_birth: User.enquo(:date_of_birth, Date(1970, 1, 1)))
+User.where(date_of_birth: Date(1970, 1, 1))
 ```
 
 Or you can query for users born less than 50 years ago:
 
 ```ruby
-User.where(date_of_birth: User.enquo(:date, Date.today - 50.years)..)
+User.where(date_of_birth: (Date.today - 50.years))..)
 ```
 
 This doesn't seem so magical, until you take a peek in the database, and realise that *all the data is still encrypted*:

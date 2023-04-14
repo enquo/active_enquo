@@ -26,12 +26,12 @@ describe "record retrieval" do
 
 			if model == UnqueryableBigint
 				it "cannot be queried" do
-					expect { model.where(value: model.enquo(:value, 0)).first }.to raise_error(ActiveRecord::StatementInvalid)
+					expect { model.where(value: 0).first }.to raise_error(ActiveRecord::StatementInvalid)
 				end
 			else
 				it "retrieves and decrypts a single record" do
 					[0, 42, 420, 2**42, -42, -420, -2**42].each do |i|
-						expect(model.where(value: model.enquo(:value, i)).first.value).to eq(i)
+						expect(model.where(value: i).first.value).to eq(i)
 					end
 				end
 			end

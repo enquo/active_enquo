@@ -25,12 +25,12 @@ describe "record retrieval" do
 
 			if model == UnqueryableText
 				it "cannot be queried" do
-					expect { model.where(value: model.enquo(:value, "")).first }.to raise_error(ActiveRecord::StatementInvalid)
+					expect { model.where(value: "").first }.to raise_error(ActiveRecord::StatementInvalid)
 				end
 			else
 				TEST_DATA.each do |k, v|
 					it "retrieves and decrypts a single #{k} record" do
-						expect(model.where(value: model.enquo(:value, v)).first.value).to eq(v)
+						expect(model.where(value: v).first.value).to eq(v)
 					end
 				end
 			end

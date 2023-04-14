@@ -27,7 +27,7 @@ describe "record retrieval" do
 
 			if model == UnqueryableDate
 				it "cannot be queried" do
-					expect { model.where(value: model.enquo(:value, Date.new(1970, 1, 1))).first }.to raise_error(ActiveRecord::StatementInvalid)
+					expect { model.where(value: Date.new(1970, 1, 1)).first }.to raise_error(ActiveRecord::StatementInvalid)
 				end
 			else
 				it "retrieves and decrypts a single record" do
@@ -40,12 +40,12 @@ describe "record retrieval" do
 						Date.new(2106, 2, 7),
 						Date.new(4096, 1, 1),
 					].each do |i|
-						expect(model.where(value: model.enquo(:value, i)).first.value).to eq(i)
+						expect(model.where(value: i).first.value).to eq(i)
 					end
 				end
 
 				it "queries correctly" do
-					expect(model.where(value: ...model.enquo(:value, Date.new(2000, 1, 1))).count).to eq(3)
+					expect(model.where(value: ...Date.new(2000, 1, 1)).count).to eq(3)
 				end
 			end
 		end

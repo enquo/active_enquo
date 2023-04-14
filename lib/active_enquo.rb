@@ -21,7 +21,38 @@ module ActiveEnquo
 	RootKey = Enquo::RootKey
 
 	module ActiveRecord
-		module ModelExtension
+		module QueryFilterMangler
+			class Ciphertext < String
+			end
+			private_constant :Ciphertext
+
+			private
+
+			def mangle_query_filter(a)
+				args = a.first
+				if args.is_a?(Hash)
+					args.keys.each do |attr|
+						next unless enquo_attr?(attr)
+
+						if args[attr].is_a?(Array)
+							args[attr] = args[attr].map { |v| maybe_enquo(attr, v) }
+						else
+							args[attr] = maybe_enquo(attr, args[attr])
+						end
+					end
+				end
+			end
+
+			def maybe_enquo(attr, v)
+				if v.nil? || v.is_a?(Ciphertext) || v.is_a?(::ActiveRecord::StatementCache::Substitute)
+					v
+				else
+					Ciphertext.new(enquo(attr, v))
+				end
+			end
+		end
+
+		module BaseExtension
 			extend ActiveSupport::Concern
 
 			def _read_attribute(attr_name, &block)
@@ -62,6 +93,13 @@ module ActiveEnquo
 			end
 
 			module ClassMethods
+				include QueryFilterMangler
+
+				def find_by(*a)
+					mangle_query_filter(a)
+					super
+				end
+
 				def enquo(attr_name, value)
 					t = self.attribute_types[attr_name.to_s]
 					if t.is_a?(::ActiveEnquo::Type)
@@ -139,6 +177,22 @@ module ActiveEnquo
 			def enquo_text(name, **options)
 				column(name, :enquo_text, **options)
 			end
+		end
+
+		module RelationExtension
+			include QueryFilterMangler
+			extend ActiveSupport::Concern
+
+			def where(*a)
+				mangle_query_filter(a)
+				super
+			end
+
+			def exists?(*a)
+				mangle_query_filter(a)
+				super
+			end
+
 		end
 	end
 
@@ -256,7 +310,8 @@ module ActiveEnquo
 end
 
 ActiveSupport.on_load(:active_record) do
-	::ActiveRecord::Base.send :include, ActiveEnquo::ActiveRecord::ModelExtension
+	::ActiveRecord::Relation.prepend ActiveEnquo::ActiveRecord::RelationExtension
+	::ActiveRecord::Base.include ActiveEnquo::ActiveRecord::BaseExtension
 
 	::ActiveRecord::ConnectionAdapters::Table.include ActiveEnquo::ActiveRecord::TableDefinitionExtension
 	::ActiveRecord::ConnectionAdapters::TableDefinition.include ActiveEnquo::ActiveRecord::TableDefinitionExtension
