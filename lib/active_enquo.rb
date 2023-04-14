@@ -123,6 +123,10 @@ module ActiveEnquo
 		end
 
 		module TableDefinitionExtension
+			def enquo_boolean(name, **options)
+				column(name, :enquo_boolean, **options)
+			end
+
 			def enquo_bigint(name, **options)
 				column(name, :enquo_bigint, **options)
 			end
@@ -140,6 +144,7 @@ module ActiveEnquo
 	module Postgres
 		module ConnectionAdapter
 			def initialize_type_map(m = type_map)
+				m.register_type "enquo_boolean", ActiveEnquo::Type::Boolean.new
 				m.register_type "enquo_bigint", ActiveEnquo::Type::Bigint.new
 				m.register_type "enquo_date", ActiveEnquo::Type::Date.new
 				m.register_type "enquo_text", ActiveEnquo::Type::Text.new
@@ -150,6 +155,24 @@ module ActiveEnquo
 	end
 
 	class Type < ::ActiveRecord::Type::Value
+		class Boolean < Type
+			def type
+				:enquo_boolean
+			end
+
+			def encrypt(value, context, field, enable_reduced_security_operations: false, no_query: false)
+				if value.nil? || value.is_a?(::ActiveRecord::StatementCache::Substitute)
+					value
+				else
+					field.encrypt_boolean(value, context, safety: enable_reduced_security_operations ? :unsafe : true, no_query: no_query)
+				end
+			end
+
+			def decrypt(value, context, field)
+				field.decrypt_boolean(value, context)
+			end
+		end
+
 		class Bigint < Type
 			def type
 				:enquo_bigint
@@ -239,6 +262,7 @@ ActiveSupport.on_load(:active_record) do
 
 	::ActiveRecord::ConnectionAdapters::PostgreSQLAdapter.prepend ActiveEnquo::Postgres::ConnectionAdapter
 
+	::ActiveRecord::ConnectionAdapters::PostgreSQLAdapter::NATIVE_DATABASE_TYPES[:enquo_boolean] = { name: "enquo_boolean" }
 	::ActiveRecord::ConnectionAdapters::PostgreSQLAdapter::NATIVE_DATABASE_TYPES[:enquo_bigint] = { name: "enquo_bigint" }
 	::ActiveRecord::ConnectionAdapters::PostgreSQLAdapter::NATIVE_DATABASE_TYPES[:enquo_date]   = { name: "enquo_date" }
 	::ActiveRecord::ConnectionAdapters::PostgreSQLAdapter::NATIVE_DATABASE_TYPES[:enquo_text]   = { name: "enquo_text" }

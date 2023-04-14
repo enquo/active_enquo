@@ -5,6 +5,7 @@ require 'rspec/mocks'
 
 require "active_record"
 require_relative "./support/migrations/create_bigints"
+require_relative "./support/migrations/create_booleans"
 require_relative "./support/migrations/create_dates"
 require_relative "./support/migrations/create_texts"
 
@@ -49,6 +50,7 @@ RSpec.configure do |config|
 
 		[
 			CreateBigints, CreateSortableBigints, CreateUnqueryableBigints,
+			CreateBooleans, CreateSortableBooleans, CreateUnqueryableBooleans,
 			CreateEnDates, CreateSortableDates, CreateUnqueryableDates,
 			CreateTexts, CreateUnqueryableTexts,
 		].each do |migration|
