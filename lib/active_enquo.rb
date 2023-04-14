@@ -82,10 +82,7 @@ module ActiveEnquo
 					relation = self.class.arel_table.name
 					field = ::ActiveEnquo.root.field(relation, attr_name)
 					attr_opts = self.class.enquo_attribute_options.fetch(attr_name.to_sym, {})
-					safety = if attr_opts[:enable_reduced_security_operations]
-						:unsafe
-					end
-					db_value = t.encrypt(value, @attributes.fetch_value(@primary_key).to_s, field, safety: safety, no_query: attr_opts[:no_query])
+					db_value = t.encrypt(value, @attributes.fetch_value(@primary_key).to_s, field, **attr_opts)
 					@attributes.write_from_user(attr_name, db_value)
 				else
 					super
@@ -100,18 +97,56 @@ module ActiveEnquo
 					super
 				end
 
-				def enquo(attr_name, value)
+				def enquo(attr_name, value_or_meta_id, maybe_value = nil)
+					meta_id, value = if value_or_meta_id.is_a?(Symbol)
+						[value_or_meta_id, maybe_value]
+					else
+						[nil, value_or_meta_id]
+					end
+
 					t = self.attribute_types[attr_name.to_s]
 					if t.is_a?(::ActiveEnquo::Type)
 						relation = self.arel_table.name
 						field = ::ActiveEnquo.root.field(relation, attr_name)
-						t.encrypt(value, "", field, safety: :unsafe)
+						if meta_id.nil?
+							t.encrypt(value, "", field, enable_reduced_security_operations: true)
+						else
+							t.encrypt_metadata_value(meta_id, value, field)
+						end
 					else
 						raise ArgumentError, "Cannot produce encrypted value on a non-enquo attribute '#{attr_name}'"
 					end
 				end
 
+				def unenquo(attr_name, value, ctx)
+					t = self.attribute_types[attr_name.to_s]
+					if t.is_a?(::ActiveEnquo::Type)
+						relation = self.arel_table.name
+						field = ::ActiveEnquo.root.field(relation, attr_name)
+						begin
+							t.decrypt(value, ctx, field)
+						rescue Enquo::Error
+							t.decrypt(value, "", field)
+						end
+					else
+						raise ArgumentError, "Cannot decrypt value on a non-enquo attribute '#{attr_name}'"
+					end
+				end
+
+				def enquo_attr?(attr_name)
+					self.attribute_types[attr_name.to_s].is_a?(::ActiveEnquo::Type)
+				end
+
 				def enquo_attr(attr_name, opts)
+					if opts.key?(:default)
+						default_value = opts.delete(:default)
+						after_initialize do
+							next if persisted?
+							next unless self.send(attr_name).nil?
+							self.send(:"#{attr_name}=", default_value.duplicable? ? default_value.dup : default_value)
+						end
+					end
+
 					enquo_attribute_options[attr_name] = @enquo_attribute_options[attr_name].merge(opts)
 				end
 
@@ -143,11 +178,8 @@ module ActiveEnquo
 									values = Hash[column_map.map do |pt_col, ct_col|
 										field = ::ActiveEnquo.root.field(relation, ct_col)
 										attr_opts = self.enquo_attribute_options.fetch(ct_col.to_sym, {})
-										safety = if attr_opts[:enable_reduced_security_operations]
-											:unsafe
-										end
 										t = self.attribute_types[ct_col.to_s]
-										db_value = t.encrypt(row[pt_col.to_s], row[self.primary_key].to_s, field, safety: safety, no_query: attr_opts[:no_query])
+										db_value = t.encrypt(row[pt_col.to_s], row[self.primary_key].to_s, field, **attr_opts)
 
 										[ct_col, db_value]
 									end]
@@ -233,8 +265,12 @@ module ActiveEnquo
 				:enquo_bigint
 			end
 
-			def encrypt(value, context, field, safety: true, no_query: false)
-				field.encrypt_i64(value, context, safety: safety, no_query: no_query)
+			def encrypt(value, context, field, enable_reduced_security_operations: false, no_query: false)
+				if value.nil? || value.is_a?(::ActiveRecord::StatementCache::Substitute)
+					value
+				else
+					field.encrypt_i64(value, context, safety: enable_reduced_security_operations ? :unsafe : true, no_query: no_query)
+				end
 			end
 
 			def decrypt(value, context, field)
@@ -247,9 +283,13 @@ module ActiveEnquo
 				:enquo_date
 			end
 
-			def encrypt(value, context, field, safety: true, no_query: false)
+			def encrypt(value, context, field, enable_reduced_security_operations: false, no_query: false)
 				value = cast_to_date(value)
-				field.encrypt_date(value, context, safety: safety, no_query: no_query)
+				if value.nil?
+					value
+				else
+					field.encrypt_date(value, context, safety: enable_reduced_security_operations ? :unsafe : true, no_query: no_query)
+				end
 			end
 
 			def decrypt(value, context, field)
@@ -263,6 +303,8 @@ module ActiveEnquo
 					value
 				elsif value.respond_to?(:to_date)
 					value.to_date
+				elsif value.nil? || (value.respond_to?(:empty?) && value.empty?) || value.is_a?(::ActiveRecord::StatementCache::Substitute)
+					nil
 				else
 					Time.parse(value.to_s).to_date
 				end
@@ -274,12 +316,33 @@ module ActiveEnquo
 				:enquo_text
 			end
 
-			def encrypt(value, context, field, safety: true, no_query: false)
-				field.encrypt_text(value, context, safety: safety, no_query: no_query)
+			def encrypt(value, context, field, enable_reduced_security_operations: false, no_query: false, enable_ordering: false)
+				if enable_ordering && !enable_reduced_security_operations
+					raise ArgumentError, "Cannot enable ordering on an Enquo attribute unless Reduced Security Operations are enabled"
+				end
+
+				if value.nil? || value.is_a?(::ActiveRecord::StatementCache::Substitute)
+					value
+				else
+					field.encrypt_text(value.encode("UTF-8"), context, safety: enable_reduced_security_operations ? :unsafe : true, no_query: no_query, order_prefix_length: enable_ordering ? 8 : nil)
+				end
+			end
+
+			def encrypt_metadata_value(name, value, field)
+				case name
+				when :length
+					field.encrypt_text_length_query(value)
+				else
+					raise ArgumentError, "Unknown metadata name for Text field: #{name.inspect}"
+				end
 			end
 
 			def decrypt(value, context, field)
-				field.decrypt_text(value, context)
+				if value.nil?
+					nil
+				else
+					field.decrypt_text(value, context)
+				end
 			end
 		end
 	end
