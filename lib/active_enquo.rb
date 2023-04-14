@@ -343,7 +343,7 @@ module ActiveEnquo
 				if value.nil? || value.is_a?(::ActiveRecord::StatementCache::Substitute)
 					value
 				else
-					field.encrypt_text(value.encode("UTF-8"), context, safety: enable_reduced_security_operations ? :unsafe : true, no_query: no_query, order_prefix_length: enable_ordering ? 8 : nil)
+					field.encrypt_text(value.respond_to?(:encode) ? value.encode("UTF-8") : value, context, safety: enable_reduced_security_operations ? :unsafe : true, no_query: no_query, order_prefix_length: enable_ordering ? 8 : nil)
 				end
 			end
 
