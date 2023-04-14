@@ -32,8 +32,10 @@ shared_examples "an ORE-encrypted boolean" do |model, value, unsafe: false, no_q
 		expect(json_value[:v1]).to have_key(:a)
 	end
 
-	it "has an ORE v1 ciphertext" do
-		expect(json_value[:v1]).to have_key(:o)
+	unless no_query
+		it "has an ORE v1 ciphertext" do
+			expect(json_value[:v1]).to have_key(:o)
+		end
 	end
 
 	it "has a key ID" do
