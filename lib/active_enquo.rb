@@ -36,6 +36,25 @@ module ActiveEnquo
 
 						if args[attr].is_a?(Array)
 							args[attr] = args[attr].map { |v| maybe_enquo(attr, v) }
+						elsif args[attr].is_a?(Range)
+							r = args[attr]
+							args[attr] = if r.exclude_end?
+								if r.begin.nil?
+									...maybe_enquo(attr, r.end)
+								elsif r.end.nil?
+									(maybe_enquo(attr.r.begin)...)
+								else
+									maybe_enquo(attr.r.begin)...maybe_enquo(attr, r.end)
+								end
+							else
+								if r.begin.nil?
+									..maybe_enquo(attr, r.end)
+								elsif r.end.nil?
+									maybe_enquo(attr.r.begin)..
+								else
+									maybe_enquo(attr.r.begin)..maybe_enquo(attr, r.end)
+								end
+							end
 						else
 							args[attr] = maybe_enquo(attr, args[attr])
 						end
