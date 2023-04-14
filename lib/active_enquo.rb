@@ -85,6 +85,7 @@ module ActiveEnquo
 					plaintext_columns = column_map.keys
 					relation = self.arel_table.name
 					in_progress = true
+					self.reset_column_information
 
 					while in_progress
 						self.transaction do
