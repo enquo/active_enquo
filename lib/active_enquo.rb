@@ -152,7 +152,7 @@ module ActiveEnquo
 										[ct_col, db_value]
 									end]
 
-									People.where(self.primary_key => row[self.primary_key]).update_all(values)
+									self.where(self.primary_key => row[self.primary_key]).update_all(values)
 								end
 							end
 						end
