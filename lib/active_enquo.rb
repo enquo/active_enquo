@@ -125,8 +125,8 @@ module ActiveEnquo
 
 					t = self.attribute_types[attr_name.to_s]
 					if t.is_a?(::ActiveEnquo::Type)
-						relation = self.arel_table.name
-						field = ::ActiveEnquo.root.field(relation, attr_name)
+						relation = self.arel_table.name.to_s
+						field = ::ActiveEnquo.root.field(relation, attr_name.to_s)
 						if meta_id.nil?
 							t.encrypt(value, "", field, enable_reduced_security_operations: true)
 						else
@@ -140,8 +140,8 @@ module ActiveEnquo
 				def unenquo(attr_name, value, ctx)
 					t = self.attribute_types[attr_name.to_s]
 					if t.is_a?(::ActiveEnquo::Type)
-						relation = self.arel_table.name
-						field = ::ActiveEnquo.root.field(relation, attr_name)
+						relation = self.arel_table.name.to_s
+						field = ::ActiveEnquo.root.field(relation, attr_name.to_s)
 						begin
 							t.decrypt(value, ctx, field)
 						rescue Enquo::Error
@@ -270,7 +270,7 @@ module ActiveEnquo
 				if value.nil? || value.is_a?(::ActiveRecord::StatementCache::Substitute)
 					value
 				else
-					field.encrypt_boolean(value, context, safety: enable_reduced_security_operations ? :unsafe : true, no_query: no_query)
+					field.encrypt_boolean(value, context, unsafe: enable_reduced_security_operations, no_query: no_query)
 				end
 			end
 
@@ -288,7 +288,7 @@ module ActiveEnquo
 				if value.nil? || value.is_a?(::ActiveRecord::StatementCache::Substitute)
 					value
 				else
-					field.encrypt_i64(value, context, safety: enable_reduced_security_operations ? :unsafe : true, no_query: no_query)
+					field.encrypt_i64(value, context, unsafe: enable_reduced_security_operations, no_query: no_query)
 				end
 			end
 
@@ -307,7 +307,7 @@ module ActiveEnquo
 				if value.nil?
 					value
 				else
-					field.encrypt_date(value, context, safety: enable_reduced_security_operations ? :unsafe : true, no_query: no_query)
+					field.encrypt_date(value, context, unsafe: enable_reduced_security_operations, no_query: no_query)
 				end
 			end
 
@@ -343,7 +343,15 @@ module ActiveEnquo
 				if value.nil? || value.is_a?(::ActiveRecord::StatementCache::Substitute)
 					value
 				else
-					field.encrypt_text(value.respond_to?(:encode) ? value.encode("UTF-8") : value, context, safety: enable_reduced_security_operations ? :unsafe : true, no_query: no_query, order_prefix_length: enable_ordering ? 8 : nil)
+					opts = {
+						unsafe: enable_reduced_security_operations,
+						no_query: no_query,
+					}
+					if enable_ordering
+						opts[:order_prefix_length] = 8
+					end
+
+					field.encrypt_text(value.respond_to?(:encode) ? value.encode("UTF-8") : value, context, **opts)
 				end
 			end
 

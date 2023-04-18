@@ -118,7 +118,7 @@ describe "record insertion" do
 				let(:value) { v }
 
 				it "explodes" do
-					expect { Bigint.new(value: v).save! }.to raise_error(ArgumentError)
+					expect { Bigint.new(value: v).save! }.to raise_error(TypeError)
 				end
 			end
 		end

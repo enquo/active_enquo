@@ -100,7 +100,7 @@ describe "record insertion" do
 				let(:value) { v }
 
 				it "explodes" do
-					expect { Boolean.new(value: v).save! }.to raise_error(ArgumentError)
+					expect { Boolean.new(value: v).save! }.to raise_error(TypeError)
 				end
 			end
 		end

@@ -96,10 +96,22 @@ describe "record insertion" do
 		end
 
 		{
+			"non-UTF8 string" => "\0\xff".force_encoding("BINARY"),
+			"invalid UTF8 string" => "\0\xff".force_encoding("UTF-8"),
+		}.each do |desc, v|
+			context "storing #{desc}" do
+				let(:model) { Text }
+				let(:value) { v }
+
+				it "explodes" do
+					expect { Text.new(value: v).save! }.to raise_error(EncodingError)
+				end
+			end
+		end
+
+		{
 			"a float" => 4.2,
 			"an integer" => 42,
-			"non-UTF8 string" => "\0\0\0\0",
-			"invalid UTF8 string" => "\0\0\0\0".force_encoding("UTF-8"),
 			"a random object" => Object.new,
 		}.each do |desc, v|
 			context "storing #{desc}" do
@@ -107,7 +119,7 @@ describe "record insertion" do
 				let(:value) { v }
 
 				it "explodes" do
-					expect { Text.new(value: v).save! }.to raise_error(ArgumentError)
+					expect { Text.new(value: v).save! }.to raise_error(TypeError)
 				end
 			end
 		end
